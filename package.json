@@ -1,0 +1,17 @@
+{
+  "name": "data-retention-policy-linter",
+  "version": "0.0.0",
+  "description": "Check retention rules for data classes, environments and deletion jobs.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/data-retention-policy-linter"
+  }
+}
