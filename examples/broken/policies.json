@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1",
+  "policies": [
+    { "class": "billing.invoices", "environment": "production", "retention": { "value": 3, "unit": "year" } },
+    { "class": "billing.invoices", "environment": "warm-standby", "retention": { "value": 3, "unit": "year" } },
+    { "class": "identity.contact-details", "environment": "production", "retention": { "value": 2, "unit": "year" } },
+    { "class": "identity.contact-details", "environment": "warm-standby", "retention": { "value": 5, "unit": "year" } },
+    { "class": "support.transcripts", "environment": "production", "retention": { "value": 180, "unit": "day" } },
+    { "class": "telemetry.page-views", "environment": "production", "retention": { "value": 26, "unit": "week" } },
+    { "class": "telemetry.page-views", "environment": "warm-standby", "retention": { "value": 26, "unit": "week" } }
+  ]
+}

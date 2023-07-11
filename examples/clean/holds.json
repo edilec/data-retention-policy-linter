@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1",
+  "holds": [
+    {
+      "id": "matter-1180-closed",
+      "status": "released",
+      "classes": ["support.transcripts"],
+      "description": "Released in 2024; recorded so the class history stays readable."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "holds": [
+    {
+      "id": "matter-1180-closed",
+      "status": "released",
+      "classes": ["billing.invoices"],
+      "description": "Released in 2024; recorded so the class history stays readable."
+    },
+    {
+      "id": "matter-2031-discovery",
+      "status": "active",
+      "classes": ["support.transcripts"],
+      "description": "Preservation notice served; transcripts must not be deleted."
+    }
+  ]
+}

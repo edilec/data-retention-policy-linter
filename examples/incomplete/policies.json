@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "policies": [
+    { "class": "analytics.sessions", "environment": "production", "retention": { "value": 6, "unit": "month" } },
+    { "class": "analytics.sessions", "environment": "warm-standby", "retention": { "value": 180, "unit": "day" } },
+    { "class": "billing.invoices", "environment": "production", "retention": { "value": 8, "unit": "year" } },
+    { "class": "billing.invoices", "environment": "warm-standby", "retention": { "value": 8, "unit": "year" } }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1",
+  "classes": [
+    {
+      "id": "billing.invoices",
+      "owner": "finance-platform",
+      "description": "Issued customer invoices and their line items.",
+      "regulation": "Companies Act 2013, s.128",
+      "regulatoryMinimum": { "value": 8, "unit": "year" }
+    },
+    {
+      "id": "identity.contact-details",
+      "owner": "identity-platform",
+      "description": "Name, postal address and contact numbers for an account holder."
+    },
+    {
+      "id": "support.transcripts",
+      "owner": "support-operations",
+      "description": "Chat and call transcripts attached to a support case.",
+      "regulation": "internal-quality-policy-4",
+      "regulatoryMinimum": { "value": 90, "unit": "day" }
+    },
+    {
+      "id": "telemetry.page-views",
+      "owner": "analytics-platform",
+      "description": "Pseudonymous page-view counters."
+    }
+  ]
+}

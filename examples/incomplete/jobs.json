@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1",
+  "jobs": [
+    {
+      "id": "nightly-expiry-sweep",
+      "classes": ["analytics.sessions", "billing.invoices"]
+    }
+  ]
+}

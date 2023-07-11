@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1",
+  "jobs": [
+    {
+      "id": "nightly-expiry-sweep",
+      "classes": [
+        "billing.invoices",
+        "identity.contact-details",
+        "support.transcripts",
+        "telemetry.page-views"
+      ],
+      "description": "Removes records past their retention period in every environment."
+    }
+  ]
+}
