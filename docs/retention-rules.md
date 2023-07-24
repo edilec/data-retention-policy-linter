@@ -190,7 +190,7 @@ contradiction.
 | --- | --- | --- |
 | `input-unreadable` | error | A document could not be reached or read. |
 | `input-not-utf8` | error | A document is not valid UTF-8. The decoder decides; the decoded text never gets a vote. |
-| `input-not-json` | error | A document is not valid JSON. |
+| `input-not-json` | error | A document is not valid JSON. The finding carries the position, line and column of the failure and never the text at it: V8 quotes the input back in its own parse message, so a file short enough to be nothing but a credential would otherwise be reproduced in full by its own error. |
 | `input-too-large` | error | A document is past `maxFileBytes` and was not read. |
 | `path-escapes-root` | error | A document resolves outside `--root` and was refused unread. |
 | `document-invalid` | error | A document is not an object, declares an unknown key, or its list is not an array. |

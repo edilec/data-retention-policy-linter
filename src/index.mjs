@@ -37,7 +37,7 @@ import { performance } from 'node:perf_hooks'
 
 import { compileClasses, compileHolds, compileJobs, compilePolicies } from './documents.mjs'
 import { downgradeRecommendations, evaluate } from './evaluate.mjs'
-import { byCodeUnit, decodeUtf8, excerpt, hasForbiddenCharacter, isPlainObject } from './text.mjs'
+import { byCodeUnit, decodeUtf8, excerpt, hasForbiddenCharacter, isPlainObject, parseFailureDetail } from './text.mjs'
 
 export const TOOL_ID = 'data-retention-policy-linter'
 export const REPORT_SCHEMA_VERSION = '1'
@@ -412,7 +412,7 @@ async function loadJson(sink, file, real, limits) {
     sink.add({
       file,
       ruleId: 'input-not-json',
-      message: `${file} is not valid JSON: ${error.message}`,
+      message: `${file} is not valid JSON: ${parseFailureDetail(error)}`,
       suggestion: 'Validate the file with a JSON parser before re-running.',
     })
     return null
@@ -689,4 +689,5 @@ export {
 export {
   EXCERPT_LIMIT, MAX_DESCRIPTION_LENGTH, MAX_IDENTIFIER_LENGTH, MAX_LABEL_LENGTH, byCodeUnit,
   decodeUtf8, describeValue, excerpt, hasForbiddenCharacter, isIdentifier, isLabel, isPlainObject,
+  parseFailureDetail,
 } from './text.mjs'

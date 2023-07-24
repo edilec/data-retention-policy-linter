@@ -61,5 +61,15 @@ here.
   stripped from every untrusted string that reaches output, identifiers, owners
   and object keys included; a value the tool refuses is described rather than
   reproduced.
+- A parse failure does not quote the file it failed on. V8 writes
+  `Unexpected token 'A', "AKIAIOSFODNN7EXAMPLE" is not valid JSON`, and
+  `input-not-json` interpolated that message, so a retention file short enough
+  to be nothing but a credential was reproduced in full on stdout -- the one
+  claim above that stripping and truncation could not keep, since `excerpt` cuts
+  from the end and the quoted span is at the front. The finding now carries the
+  position, line, column and offending token and never the text at them, and
+  `test/parse-failure-redaction.test.mjs` drives the AWS documentation
+  placeholder through the real binary and asserts it absent from stdout, from
+  stderr and from every prefix down to eight characters.
 
 No release has been published.
