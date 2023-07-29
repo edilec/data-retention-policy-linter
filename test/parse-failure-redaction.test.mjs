@@ -97,3 +97,102 @@ test('parseFailureDetail keeps the position and drops the quoted input', () => {
   assert.equal(parseFailureDetail(caught('')), 'Unexpected end of JSON input')
   assert.equal(parseFailureDetail(undefined), 'the file could not be parsed as JSON')
 })
+
+/**
+ * The trap the first fix walked into: a file whose own text reads
+ * `at position 1`.
+ *
+ * V8 answers it with `Unexpected token 'a', "at position 1" is not valid JSON`,
+ * which carries BOTH spellings at once -- the quoted copy of the file, and,
+ * inside that copy, something that reads exactly like an offset. A helper that
+ * looks for the offset first finds the file's own text, slices the message
+ * there, and ships the quoted span it was written to remove. The offset is only
+ * safe once the quoting shape has been ruled out, so the quoting shape is
+ * recognised first.
+ *
+ * `LEADING` is the seven characters of the canary that fit in front of
+ * `at position 1` inside V8's twenty-character quoting window -- one more than
+ * the six-character standard the rest of the suite holds the tool to.
+ */
+
+const LEADING = CANARY.slice(0, 7)
+
+/** Every prefix of `text` from `length` characters down to six. */
+function assertNoShortPrefix(haystack, needle, where) {
+  for (let length = needle.length; length >= 6; length -= 1) {
+    const prefix = needle.slice(0, length)
+    assert.equal(haystack.includes(prefix), false, `${where} carried ${length} characters of "${needle}"`)
+  }
+}
+
+const caught = (text) => {
+  try {
+    JSON.parse(text)
+    return null
+  } catch (error) {
+    return error
+  }
+}
+
+test('a file whose own text reads "at position 1" is not sliced back out of the message', () => {
+  // The bare form first: the document IS the offset-looking text, so a
+  // position-first helper returns the document.
+  const bare = caught('at position 1')
+  assert.equal(bare.message.includes('"at position 1"'), true, 'V8 still quotes it, so this test still has a subject')
+  assert.equal(parseFailureDetail(bare), "unexpected token 'a' at the start of the document")
+
+  // And with a credential in front of it, inside V8's twenty-character window.
+  const planted = caught(`${LEADING}at position 1`)
+  const detail = parseFailureDetail(planted)
+  assert.equal(planted.message.includes(LEADING), true, 'V8 still quotes the canary, so this test still has a subject')
+  assertNoShortPrefix(detail, LEADING, 'the detail')
+  assert.equal(detail, "unexpected token 'A' at the start of the document")
+})
+
+test('a quoted span carrying a newline is still recognised as a quoted span', () => {
+  // Twenty characters exactly, which is where V8 stops quoting the whole file
+  // and starts quoting a window, so the span holds both a line break and the
+  // offset-looking text. Without the `s` flag the quoting shape does not match
+  // across the line break; the offset inside the span matches instead, and the
+  // file comes back out.
+  const error = caught(`${CANARY.slice(0, 6)}\nat position 1`)
+  assert.equal(error.message.includes(CANARY.slice(0, 6)), true, 'V8 still quotes the canary, so this test still has a subject')
+  assert.equal(error.message.includes('\n'), true, 'the quoted span still carries the newline')
+
+  const detail = parseFailureDetail(error)
+  assertNoShortPrefix(detail, CANARY.slice(0, 6), 'the detail')
+  assert.equal(detail, "unexpected token 'A' at the start of the document")
+})
+
+test('a credential-only file and a long file with a credential prefix both keep only the token', () => {
+  const whole = parseFailureDetail(caught(CANARY))
+  assertNoShortPrefix(whole, CANARY, 'the detail for a credential-only file')
+  assert.equal(whole, "unexpected token 'A' at the start of the document")
+
+  const long = parseFailureDetail(caught(`${CANARY}${'-'.repeat(4000)}`))
+  assertNoShortPrefix(long, CANARY, 'the detail for a long file with a sensitive prefix')
+  assert.equal(long, "unexpected token 'A' at the start of the document")
+
+  // A failure reached from the middle of the file says so rather than claiming
+  // the start.
+  const inside = parseFailureDetail(caught(`{"schemaVersion": "1", "classes": ${CANARY}}`))
+  assertNoShortPrefix(inside, CANARY, 'the detail for a failure inside the file')
+  assert.equal(inside, "unexpected token 'A' inside the document")
+})
+
+test('the safe positional spelling still carries position, line and column', () => {
+  const detail = parseFailureDetail(caught('{"schemaVersion": "1" "classes": []}'))
+  assert.match(detail, /at position \d+ \(line \d+ column \d+\)$/)
+  assert.equal(detail, "Expected ',' or '}' after property value in JSON at position 22 (line 1 column 23)")
+})
+
+test('a quoting wording this build has never seen is refused wholesale', () => {
+  // The closing guard, and the only thing standing between a future V8 wording
+  // and the file it failed on. This message quotes the input and matches no
+  // branch above; the offset inside the quoted span is the only thing that
+  // matches, so without the guard the span ships.
+  const unseen = { message: `Unexpected token 'A', "${LEADING} at position 5" is not valid JSON.` }
+  const detail = parseFailureDetail(unseen)
+  assertNoShortPrefix(detail, LEADING, 'the detail for an unrecognised wording')
+  assert.equal(detail, 'the file could not be parsed as JSON')
+})
