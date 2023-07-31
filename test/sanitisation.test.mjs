@@ -228,6 +228,41 @@ test('a value planted in a description or an owner never reaches either stream, 
   }
 })
 
+/**
+ * The three places the sweep above never reached.
+ *
+ * `retention` is planted as a whole string, which `compileDuration` refuses on
+ * its `string` branch and reports by length alone -- so the canary never got
+ * near the branch that reports an unsupported *unit*, and that branch quoted
+ * the unit back verbatim. All three canaries reached stdout and stderr in full
+ * through it, under a docblock promising the opposite.
+ */
+test('a value planted in a duration unit is described rather than quoted, at any prefix', async () => {
+  for (const canary of CANARIES) {
+    const files = fixture(
+      [dataClass('billing.invoices', 'finance-platform')],
+      [policy('billing.invoices', 'production', duration(1, canary))],
+      [],
+      [job('nightly-sweep', ['billing.invoices'])],
+    )
+
+    const result = await withRoot(files, (root) => cliRun(['--root', root]))
+    const streams = `${result.stdout}\n${result.stderr}`
+
+    assert.equal(result.code, 2, canary)
+    assert.equal(streams.includes('duration-unit-unsupported'), true, `${canary}: the unit really was refused`)
+    assert.equal(streams.includes(`a string of ${canary.length} character(s)`), true, `${canary}: and the refusal described it`)
+    for (let length = 8; length <= canary.length; length += 1) {
+      assert.equal(streams.includes(canary.slice(0, length)), false, `${canary}: the first ${length} characters leaked`)
+      assert.equal(
+        streams.toLowerCase().includes(canary.slice(0, length).toLowerCase()),
+        false,
+        `${canary}: the first ${length} characters leaked, in some case or other`,
+      )
+    }
+  }
+})
+
 test('a value planted in a field the tool refuses is described rather than quoted, at any prefix', async () => {
   for (const canary of CANARIES) {
     const files = fixture(

@@ -206,7 +206,10 @@ function openEntry(sink, file, pointer, raw, spec, byId) {
  *
  * The refused value is described, never reproduced: a retention field is a
  * place an exporter can put anything at all, and the pointer already says
- * exactly where to look.
+ * exactly where to look. That held for every reason but one -- an unsupported
+ * unit was quoted back verbatim, so a `unit` holding a credential shipped it to
+ * stdout and stderr in full, on a path the canary sweep never walked. The unit
+ * is now described like every other refused value.
  */
 function reportDuration(sink, file, pointer, label, result, limits) {
   const ruleId = DURATION_RULES[result.reason]
@@ -225,7 +228,7 @@ function reportDuration(sink, file, pointer, label, result, limits) {
   } else if (result.reason === 'unit-shape') {
     message = `${label} declares no unit; a duration is compared as an explicit value and unit.`
   } else if (result.reason === 'unit-unsupported') {
-    message = `${label} uses the unit "${excerpt(String(result.detail), 40)}", which this build does not implement; supported units are day, week, month and year. It was refused rather than converted into a guess.`
+    message = `${label} declares a unit this build does not implement; it is ${describeValue(result.detail)}. Supported units are day, week, month and year, and the unit is described rather than reproduced -- the pointer says where to read it. It was refused rather than converted into a guess.`
   } else if (result.reason === 'value-range') {
     message = `${label} declares the value ${result.detail}, above the maxDurationValue limit of ${limits.maxDurationValue}; it was refused rather than clamped.`
   } else {
