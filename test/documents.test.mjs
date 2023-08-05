@@ -66,7 +66,8 @@ test('an unknown document key is refused rather than ignored, so a typo cannot d
   })
 
   const finding = findingsFor(report, 'document-invalid')[0]
-  assert.equal(finding.message.includes('"dataClasses"'), true)
+  assert.equal(finding.message.includes('1 unknown key(s)'), true)
+  assert.equal(finding.message.includes('dataClasses'), false, 'the key is counted, not reproduced')
   assert.equal(finding.message.includes(CLASS_DOCUMENT_KEYS.join(', ')), true)
   assert.equal(report.status, 'incomplete')
 })

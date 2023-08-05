@@ -21,7 +21,7 @@ import {
  * The ordering sites that cannot be pinned, proved equivalent instead of left
  * as gaps.
  *
- * `test/ordering.test.mjs` pins twelve of this package's seventeen ordering
+ * `test/ordering.test.mjs` pins eleven of this package's sixteen ordering
  * sites by emitting a sequence a collator would emit differently. The remaining
  * five order values a collator cannot reorder at all: the reason vocabulary
  * (two sites), JSON Pointers, rule ids, and the message that breaks a tie no

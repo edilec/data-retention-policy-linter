@@ -323,7 +323,7 @@ comparison reads ICU data that differs between Node builds, and it weighs
 punctuation differently from its code point — `maxClassRefs` and `maxClasses`
 really do swap under English collation — so a collated report would name a
 different environment in a conflict on a different machine. `test/ordering.test.mjs`
-pins twelve of the seventeen ordering sites by what the tool emits; the remaining
+pins eleven of the sixteen ordering sites by what the tool emits; the remaining
 five are proved equivalent by enumeration in `test/ordering-equivalence.test.mjs`.
 
 Running the tool twice over identical inputs produces byte-identical stdout. There

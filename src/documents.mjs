@@ -21,7 +21,6 @@ import { compileDuration } from './duration.mjs'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_LABEL_LENGTH,
-  byCodeUnit,
   describeValue,
   excerpt,
   isIdentifier,
@@ -68,12 +67,19 @@ const DURATION_RULES = Object.freeze({
   'value-shape': 'duration-invalid',
 })
 
+/**
+ * The keys of `value` that are not in `allowed`.
+ *
+ * Counted, never named. A key name is untrusted text from a file this tool did
+ * not write, and naming it put a credential-shaped key on stdout and stderr in
+ * full -- under a message claiming in the same sentence that no credential
+ * field can reach this tool by accident. There is nothing to order once nothing
+ * is named, so the code-unit sort that used to decide which key was quoted
+ * first is gone with it; the pointer on the finding and the list of known keys
+ * are what a reader needs, and neither comes out of the file.
+ */
 function unknownKeys(value, allowed) {
-  return Object.keys(value).filter((key) => !allowed.includes(key)).sort(byCodeUnit)
-}
-
-function quoteKeys(keys) {
-  return keys.map((key) => `"${excerpt(key, 60)}"`).join(', ')
+  return Object.keys(value).filter((key) => !allowed.includes(key))
 }
 
 /**
@@ -102,7 +108,7 @@ function openDocument(sink, file, value, spec, limits) {
       file,
       pointer: '',
       ruleId: 'document-invalid',
-      message: `${file} declares unknown key(s) ${quoteKeys(stray)}; known keys are ${spec.documentKeys.join(', ')}. An unknown key is refused rather than ignored, so a typo cannot disable a check.`,
+      message: `${file} declares ${stray.length} unknown key(s); known keys are ${spec.documentKeys.join(', ')}. An unknown key is refused rather than ignored, so a typo cannot disable a check. The names are counted rather than reproduced, so what the document chose to call them cannot reach this report.`,
     })
     return null
   }
@@ -161,7 +167,7 @@ function openEntry(sink, file, pointer, raw, spec, byId) {
       file,
       pointer,
       ruleId: spec.invalidRule,
-      message: `This ${spec.noun} declares unknown key(s) ${quoteKeys(stray)}; known keys are ${spec.entryKeys.join(', ')}. Nothing outside that list is read, which is why no record, payload or credential field can reach this tool by accident.`,
+      message: `This ${spec.noun} declares ${stray.length} unknown key(s); known keys are ${spec.entryKeys.join(', ')}. Nothing outside that list is read -- not the value, and not the name either -- which is why no record, payload or credential field can reach this tool by accident.`,
     })
     return null
   }
@@ -224,7 +230,7 @@ function reportDuration(sink, file, pointer, label, result, limits) {
   } else if (result.reason === 'string') {
     message = `${label} is written as a string of ${result.detail} character(s); this build compares explicit units and never parses a duration out of text, because "1m" is a minute to one exporter and a month to another.`
   } else if (result.reason === 'stray-keys') {
-    message = `${label} declares unknown key(s) ${quoteKeys(result.detail)}; a duration carries "value" and "unit" and nothing else.`
+    message = `${label} declares ${result.detail.length} unknown key(s); a duration carries "value" and "unit" and nothing else. The names are counted rather than reproduced.`
   } else if (result.reason === 'unit-shape') {
     message = `${label} declares no unit; a duration is compared as an explicit value and unit.`
   } else if (result.reason === 'unit-unsupported') {

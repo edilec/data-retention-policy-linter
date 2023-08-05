@@ -4,7 +4,6 @@ import test from 'node:test'
 import { lintRetentionPolicies } from '../src/index.mjs'
 import {
   apiReport,
-  classDocument,
   classRow,
   clean,
   cliRun,
@@ -25,17 +24,22 @@ import {
  * collates identically and spells differently, so the scan passes while the
  * output silently starts depending on the ICU data of whichever Node build is
  * running. Pinning the comparator itself is no better -- every call site can be
- * swapped on its own, and there are seventeen of them in this package.
+ * swapped on its own, and there are sixteen of them in this package.
  *
  * Every case below chooses inputs an English collator orders the other way
  * round, pushes them through the real report path, and asserts the exact
  * emitted sequence, so that swapping any one site fails a test rather than
  * going unnoticed.
  *
- * Six sites cannot be pinned this way, because their real values -- rule ids,
- * JSON Pointers, this package's own limit names and its reason vocabulary --
- * collate exactly as they compare. Those are proved equivalent by enumeration
- * in `test/ordering-equivalence.test.mjs` rather than left as gaps.
+ * Five sites cannot be pinned this way, because their real values -- rule ids,
+ * JSON Pointers and this package's reason vocabulary -- collate exactly as they
+ * compare. Those are proved equivalent by enumeration in
+ * `test/ordering-equivalence.test.mjs` rather than left as gaps.
+ *
+ * A seventeenth site used to order the unknown keys a message named. Nothing
+ * names them any more -- a key is untrusted text and is now counted rather than
+ * reproduced -- so the sort was deleted rather than left ordering a list no
+ * reader sees.
  */
 
 const collator = new Intl.Collator('en')
@@ -144,16 +148,6 @@ test('the hold, active-hold and deletion-job lists on a row are ordered by code 
 
   const conflict = findingsFor(report, 'hold-conflicts-with-job')[0]
   assert.equal(conflict.evidence, 'holds: Z-matter, a-matter; jobs: README-job, Z-job, a-job')
-})
-
-test('the unknown keys named in a message are ordered by code unit', async () => {
-  const report = await apiReport({
-    ...clean(),
-    'classes.json': classDocument([{ id: 'billing.invoices', owner: 'finance', aextra: 1, Zextra: 2, README: 3 }]),
-  })
-
-  const finding = findingsFor(report, 'class-invalid')[0]
-  assert.equal(finding.message.includes('"README", "Zextra", "aextra"'), true)
 })
 
 test('findings are ordered by the file they are about, by code unit', async () => {

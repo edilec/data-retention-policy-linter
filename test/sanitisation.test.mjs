@@ -113,13 +113,16 @@ test('a forbidden character arriving through free text reaches evidence only fla
   }
 })
 
-test('a line separator reaching a message cannot forge a line in the human report', async () => {
+test('what an unknown key contains cannot change one byte of the human report', async () => {
   const forged = 'ERROR forged.json fake-rule invented'
 
-  // The same input twice, differing only in the character joining the two
+  // The same input each time, differing only in the character joining the two
   // halves of an unknown key. A space is harmless; each of the four below is a
-  // line break to some consumer. If any of them forged a line, the stream would
-  // hold one more line than the harmless run does.
+  // line break to some consumer. The key name used to be quoted into the
+  // message, which is what made this a line-forging question at all; it is now
+  // counted rather than reproduced, so the stronger property holds -- the whole
+  // stream is byte-identical however the key is spelled, and a report that
+  // cannot depend on the key cannot be forged by it.
   const run = async (character) => {
     const files = {
       ...clean(),
@@ -133,13 +136,15 @@ test('a line separator reaching a message cannot forge a line in the human repor
 
   const harmless = await run(' ')
   const harmlessLines = harmless.stderr.split('\n').length
-  assert.equal(harmless.stderr.includes(forged), true, 'the key really is echoed, or this proves nothing')
+  assert.equal(harmless.stderr.includes('unknown key(s)'), true, 'the refusal really did fire, or this proves nothing')
+  assert.equal(harmless.stderr.includes(forged), false, 'and the key was not reproduced even when it was harmless')
   assert.equal(harmlessLines > 4, true)
 
   for (const character of [FORBIDDEN['C0 LF'], FORBIDDEN['C1 NEL'], FORBIDDEN['line separator'], FORBIDDEN['paragraph separator']]) {
     const result = await run(character)
     const lines = result.stderr.split('\n')
 
+    assert.equal(result.stderr, harmless.stderr, 'the key cannot change the report at all')
     assert.equal(lines.at(-1), '', 'the report ends with a newline')
     assert.equal(lines.length, harmlessLines, 'not one line more than the harmless run printed')
     assert.equal(lines.filter((line) => line.startsWith('ERROR forged')).length, 0, 'and nothing was forged')
@@ -202,6 +207,12 @@ test('nothing forbidden survives in a report that raises many different rules at
  * streams. Checking the field somebody remembered is a test the next field
  * passes for free; checking prefixes catches a truncating excerpt that leaks
  * the first half.
+ *
+ * The sweep as first written planted its canaries only in a description, an
+ * owner, a class id and a whole-string retention, and all three of the places
+ * this tool actually leaked were somewhere else: a duration `unit`, a key name,
+ * and the text of a JSON parse error. Each of those now has a case, because a
+ * sweep is only as good as the list of places it agrees to look.
  */
 const CANARIES = Object.freeze([
   'AKIAIOSFODNN7EXAMPLE',
@@ -224,6 +235,43 @@ test('a value planted in a description or an owner never reaches either stream, 
     assert.equal(result.code, 0, canary)
     for (let length = 8; length <= canary.length; length += 1) {
       assert.equal(streams.includes(canary.slice(0, length)), false, `${canary}: the first ${length} characters leaked`)
+    }
+  }
+})
+
+/**
+ * The other place the sweep never reached: the key, rather than the value.
+ *
+ * All three levels that refuse an unknown key used to quote its name back --
+ * the document, the entry, and the duration object -- so a credential-shaped
+ * key reached both streams in full while the very message carrying it said no
+ * credential field can reach this tool by accident. A key is untrusted text
+ * like any other, and every prefix of it is swept here like any other.
+ */
+test('a canary planted in a key name never reaches either stream, at any prefix', async () => {
+  for (const canary of CANARIES) {
+    const cases = [
+      ['document', { ...clean(), 'classes.json': { schemaVersion: '1', classes: [], [canary]: 1 } }],
+      ['entry', { ...clean(), 'classes.json': classDocument([{ id: 'billing.invoices', owner: 'finance-platform', [canary]: 1 }]) }],
+      ['duration', {
+        ...clean(),
+        'policies.json': policyDocument([policy('billing.invoices', 'production', { value: 1, unit: 'year', [canary]: 1 })]),
+      }],
+    ]
+
+    for (const [where, files] of cases) {
+      const result = await withRoot(files, (root) => cliRun(['--root', root]))
+      const streams = `${result.stdout}\n${result.stderr}`
+
+      assert.equal(result.code, 2, `${canary} in a ${where} key`)
+      assert.equal(streams.includes('1 unknown key(s)'), true, `${canary} in a ${where} key: the refusal really did fire`)
+      for (let length = 8; length <= canary.length; length += 1) {
+        assert.equal(
+          streams.includes(canary.slice(0, length)),
+          false,
+          `${canary} in a ${where} key: the first ${length} characters leaked`,
+        )
+      }
     }
   }
 })
