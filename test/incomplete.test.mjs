@@ -209,6 +209,52 @@ test('a run that could not finish is not a pass, and a run that finished badly i
   assert.equal(classRow(undecided.report, 'a.one').recommendation, 'undecided')
 })
 
+/**
+ * The budget passed *after* the loop, on the one input where nothing else can
+ * mark the run incomplete.
+ *
+ * `downgradeRecommendations` leaves a `blocked-by-hold` row alone on purpose,
+ * so a run whose only class is under an active hold ends the downgrade with
+ * `counts.undecided` still 0 -- and the undecided backstop, which covers every
+ * other time-budget case, never fires. Deleting the `state.incomplete = true`
+ * in the time-budget branch therefore changed nothing in the suite while
+ * changing this run from `incomplete` to `fail`, and the exit code with it.
+ *
+ * The clock is injected rather than waited on: one run is counted with a clock
+ * that never advances, and the second run lets the *last* read -- the re-check
+ * after `evaluate` returned -- be the one that is over budget. Tripping the
+ * budget any earlier throws out of `evaluate`, leaves `result` null, and is
+ * caught by a different flag entirely.
+ */
+test('a budget passed only after the evaluation returned is incomplete, not merely failed', async () => {
+  const files = fixture(
+    [dataClass('billing.invoices', 'finance-platform')],
+    [policy('billing.invoices', 'production', duration(3, 'year'))],
+    [hold('matter-2031', 'active', ['billing.invoices'])],
+    [job('nightly-sweep', ['billing.invoices'])],
+  )
+  const limits = { maxRuntimeMs: 1000 }
+
+  let reads = 0
+  const untimed = await apiReport(files, { limits, clock: () => { reads += 1; return 0 } })
+  assert.equal(findingsFor(untimed, 'time-budget-exceeded').length, 0, 'the counting run stayed inside its budget')
+  assert.equal(untimed.status, 'fail', 'and it is a fail, so incomplete below cannot come from anything it carried')
+
+  let read = 0
+  const report = await apiReport(files, {
+    limits,
+    clock: () => {
+      read += 1
+      return read < reads ? 0 : limits.maxRuntimeMs + 1
+    },
+  })
+
+  assert.equal(findingsFor(report, 'time-budget-exceeded').length, 1, 'the budget fired, after the loop')
+  assert.equal(classRow(report, 'billing.invoices').recommendation, 'blocked-by-hold')
+  assert.equal(report.summary.undecided, 0, 'nothing was downgraded, so no other flag is doing this work')
+  assert.equal(report.status, 'incomplete')
+})
+
 test('a policy entry refused without a readable class name leaves every class undecided', async () => {
   const report = await expectIncomplete('an unattributable refusal', fixture(
     [dataClass('a.one', 'team-one'), dataClass('b.two', 'team-two')],
