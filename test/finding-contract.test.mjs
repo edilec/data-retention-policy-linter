@@ -115,8 +115,21 @@ test('the envelope carries exactly the documented keys', async () => {
     )
     for (const [key, value] of Object.entries(report.summary)) {
       assert.equal(Number.isInteger(value), true, `summary.${key} is an integer`)
-      assert.equal(value >= 0, true, `summary.${key} is not negative`)
     }
+
+    // Not `value >= 0`: every one of these is a `.length` or a filter count, so
+    // non-negativity holds by construction and the assertion cannot fail. What
+    // can fail is the summary disagreeing with the report it summarises, which
+    // is the thing a consumer reading only the summary would be misled by.
+    assert.equal(report.summary.errors, report.findings.filter((row) => row.severity === 'error').length)
+    assert.equal(report.summary.warnings, report.findings.filter((row) => row.severity === 'warning').length)
+    assert.equal(report.summary.checked, report.classes.length)
+    assert.equal(report.summary.environments, report.environments.length)
+    assert.equal(
+      report.summary.deletionRecommended + report.summary.blockedByHold + report.summary.blocked + report.summary.undecided,
+      report.summary.checked,
+      'every class checked carries exactly one of the four recommendations',
+    )
   }
 })
 

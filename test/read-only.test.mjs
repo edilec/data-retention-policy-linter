@@ -153,9 +153,18 @@ test('the shipped source reaches for no way to remove, move or rewrite anything'
 
 test('the binary writes only to the two streams a report contract allows', async () => {
   const source = await readFile(CLI, 'utf8')
-  const writes = source.match(/process\.(stdout|stderr)\.write/g) ?? []
 
-  assert.equal(writes.length > 0, true)
-  assert.equal(writes.every((call) => call === 'process.stdout.write' || call === 'process.stderr.write'), true)
+  // Every `.write(` in the file, whatever it is called on -- not only the two
+  // spellings this test wants to find. Matching `process\.(stdout|stderr)` and
+  // then asserting each match is one of those two is a tautology: the pattern
+  // that produced the array is the pattern being asserted, so a third stream
+  // would simply not appear in it and the test would stay green.
+  const writes = source.match(/[\w$.]*\.write\s*\(/g) ?? []
+  const allowed = ['process.stdout.write(', 'process.stderr.write(']
+
+  assert.equal(writes.length > 0, true, 'the binary really does write something')
+  for (const call of writes) {
+    assert.equal(allowed.includes(call.replace(/\s+/g, '')), true, `the binary writes through ${call}`)
+  }
   assert.equal(source.includes('process.stdin'), false, 'and it reads no stream at all')
 })
