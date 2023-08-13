@@ -215,6 +215,16 @@ holds, jobs, class references per entry, environments, findings, runtime — is
 enforced and reported by name, and reaching one makes the run `incomplete` rather
 than truncating the input and reporting on the part that was read.
 
+`maxRuntimeMs` bounds the *evaluation*, which is the phase whose cost grows with
+the product of the inputs; reading and compiling the four documents is bounded by
+`maxFileBytes` and by the per-document entry limits instead. That split is not a
+softening: a single `Object.keys` over one enormous entry cannot be interrupted
+from inside the same thread whatever the budget says, so the compile phase is
+bounded by refusing an input that is too large rather than by a clock it could
+not consult. A 28.6 MB `classes.json` holding one entry with two million unknown
+keys spends seconds inside `Object.keys` before any budget could be asked —
+which is why the size limit, not the time limit, is what makes that input safe.
+
 ## Development
 
 ```sh
