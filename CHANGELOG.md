@@ -58,9 +58,17 @@ here.
 - Strict UTF-8 decoding on every input, with no inference drawn from decoded
   text.
 - Control (C0), DEL, C1, line/paragraph separator and bidi characters are
-  stripped from every untrusted string that reaches output, identifiers, owners
-  and object keys included; a value the tool refuses is described rather than
-  reproduced.
+  stripped from every untrusted string that reaches output, identifiers and
+  owners included; a value the tool refuses is described rather than reproduced.
+  Two paths broke that rule and were fixed: an unsupported duration `unit` was
+  quoted back verbatim under a docblock promising the opposite, and a stray
+  object key was named at the document, entry and duration levels -- the entry
+  message printing the key immediately after the sentence "no record, payload or
+  credential field can reach this tool by accident". A unit is now described like
+  every other refused value and a key is counted rather than named, so what an
+  unknown key is called cannot change one byte of the report. The canary sweep,
+  which had planted its placeholders only in a description, an owner, a class id
+  and a whole-string retention, now plants them in a unit and in a key too.
 - A parse failure does not quote the file it failed on. V8 writes
   `Unexpected token 'A', "AKIAIOSFODNN7EXAMPLE" is not valid JSON`, and
   `input-not-json` interpolated that message, so a retention file short enough
@@ -71,5 +79,13 @@ here.
   `test/parse-failure-redaction.test.mjs` drives the AWS documentation
   placeholder through the real binary and asserts it absent from stdout, from
   stderr and from every prefix down to eight characters.
+
+  The first fix was not enough on its own. It looked for `at position N` before
+  it looked for the quoting shape, so a file whose own text reads
+  `at position 1` -- V8 answers it with
+  `Unexpected token 'a', "at position 1" is not valid JSON` -- had the offset
+  found *inside* the quoted copy, and the slice shipped the copy. The quoting
+  shape is now recognised first, matched across a line break, and any detail
+  still carrying a double quote is discarded for the generic sentence.
 
 No release has been published.
