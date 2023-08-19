@@ -174,8 +174,9 @@ cannot conclude.
 only file-system surface the source imports is `{ readFile, realpath, stat }`, and
 `test/read-only.test.mjs` snapshots the input tree byte for byte around a real run
 and asserts that nothing moved. No socket is opened either, proved by a
-module-resolution guard that refuses every network builtin and by a live loopback
-listener planted in the input that records that nothing knocked. A URL in a
+module-resolution guard that refuses every network builtin, denies fetch and
+socket connect, and runs over inert loopback-looking input without opening a
+test listener. A URL in a
 description is data, not an instruction to fetch it; a job named in a document is
 data, not an instruction to run it.
 
