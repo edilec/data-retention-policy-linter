@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1",
+  "jobs": [
+    {
+      "id": "nightly-expiry-sweep",
+      "classes": [
+        "billing.invoices",
+        "identity.contact-details",
+        "support.transcripts",
+        "legacy.clickstream"
+      ],
+      "description": "Still names a class the catalog retired; nothing covers telemetry.page-views."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "classes": [
+    {
+      "id": "analytics.sessions",
+      "owner": "analytics-platform",
+      "regulation": "internal-analytics-policy-2",
+      "regulatoryMinimum": { "value": 3, "unit": "month" }
+    },
+    {
+      "id": "billing.invoices",
+      "owner": "finance-platform",
+      "regulation": "Companies Act 2013, s.128",
+      "regulatoryMinimum": { "value": 8, "unit": "year" }
+    }
+  ]
+}
